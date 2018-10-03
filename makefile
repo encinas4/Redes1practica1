@@ -25,9 +25,9 @@ EXEC_SOURCES = $(shell grep -l "^int main" $(SOURCES) | xargs)
 EXECS = $(shell echo $(EXEC_SOURCES) | sed -e 's:\.c[p]*::g')
 DEPS = $(shell echo $(SOURCES) | sed -e 's:\.c[p]*:\.d:g')
 
-all:	EjemploPcapP1
+all:	ejemploPcap1
 
-practica1:	EjemploPcapP1.o
+practica1:	ejemploPcap1.o
 
 # receta para hacer un .d (dependencias automaticas de tipo .h para tus .o)
 %.d : %.c
@@ -39,7 +39,7 @@ practica1:	EjemploPcapP1.o
 -include $(DEPS)
 
 # receta para hacer un .o
-%.o :	%.c
+%.o :	%.c %.h
 	@echo -n compilando objeto \'$<\'...
 	@$(CC) $(CFLAGS) $< -c
 	@echo [OK]
