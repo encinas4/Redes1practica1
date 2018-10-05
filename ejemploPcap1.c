@@ -4,7 +4,8 @@ Muestra el tiempo de llegada de los primeros 50 paquetes a la interface eth0
 y los vuelca a traza nueva (�correctamente?) con tiempo actual
 
  Compila: gcc -Wall -o EjemploPcapP1 EjemploPcapP1.c -lpcap
- Autor: Jose Luis Garcia Dorado (primera Versión), Inés Fernández Campos y Javier Encinas Cortés
+ Autor: Jose Luis Garcia Dorado (primera Versión)
+ Autores: Inés Fernández Campos y Javier Encinas Cortés
  2018 EPS-UAM
 ***************************************************************************/
 #include "ejemploPcap1.h"
@@ -17,6 +18,10 @@ y los vuelca a traza nueva (�correctamente?) con tiempo actual
 pcap_t *descr=NULL,*descr2=NULL;
 pcap_dumper_t *pdumper=NULL;
 
+/*
+	funcion para la gestion del control C
+	caso con un solo argumento
+*/
 void handle(int nsignal){
 	printf("Control C pulsado\n");
 	if(descr)
@@ -26,8 +31,12 @@ void handle(int nsignal){
 	if(pdumper)
 		pcap_dump_close(pdumper);
 	exit(OK);
- }
-  
+}
+
+/*
+	funcion de atencion de los paquetes
+	argumento callback de pcap_loop
+*/  
 void fa_nuevo_paquete(uint8_t *usuario, const struct pcap_pkthdr* cabecera, const uint8_t* paquete){
 	int* num_paquete=(int *)usuario;
 	(*num_paquete)++;
@@ -47,11 +56,14 @@ int main(int argc, char **argv)
 	/* Primer caso en el que no se introducen argumentos*/
 	if (argc == 1) {
 		fprintf (stdout, "ERROR POCOS ARGUMENTOS\n"); 
-		fprintf (stdout, "La entrada debe ser: ./ejemploPcap1 nombre_archivo_salida.asm\n"); 
+		fprintf (stdout, "La entrada debe ser:\n"); 
+		fprintf (stdout, "\t\t\t./ejemploPcap1 numero_bytes_a_mostrar\n"); 
+		fprintf (stdout, "\t\t\t./ejemploPcap1 numero_bytes_a_mostrar nombre_traza.pcap\n"); 
 		return -1;
-
+	} 
+	
 	/* Segundo caso en el que se introduce un argumento, siendo este el numero de Bytes a mostrar de los paquetes*/
-	} else if(argc == 2) {
+	if(argc == 2) {
 
 		//Apertura de interface
 	   	if ((descr = pcap_open_live("eth0",*argv[1],1,100, errbuf)) == NULL){			/* ¡WARNING! 100ms de tiempo de respuesta?? */
