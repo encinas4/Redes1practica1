@@ -17,6 +17,7 @@ y los vuelca a traza nueva (�correctamente?) con tiempo actual
 
 pcap_t *descr=NULL,*descr2=NULL;
 pcap_dumper_t *pdumper=NULL;
+int count_paquetes = 0;
 
 /*
 	funcion para la gestion del control C
@@ -40,6 +41,7 @@ void handle(int nsignal){
 void fa_nuevo_paquete(uint8_t *usuario, const struct pcap_pkthdr* cabecera, const uint8_t* paquete){
 	int* num_paquete=(int *)usuario;
 	(*num_paquete)++;
+	count_paquetes ++ ;
 	printf("Nuevo paquete capturado a las %s\n",ctime((const time_t*)&(cabecera->ts.tv_sec)));
 	if(pdumper){
 		pcap_dump((uint8_t *)pdumper,cabecera,paquete);
@@ -61,9 +63,20 @@ int main(int argc, char **argv)
 		fprintf (stdout, "\t\t\t./ejemploPcap1 numero_bytes_a_mostrar nombre_traza.pcap\n"); 
 		return -1;
 	} 
-	
+
 	/* Segundo caso en el que se introduce un argumento, siendo este el numero de Bytes a mostrar de los paquetes*/
+	if(signal(SIGINT,handle)==SIG_ERR){ 				//¡WARNING!  esto va aqui??
+		printf("Error: Fallo al capturar la senal SIGINT.\n");
+		exit(ERROR);
+	}
+
 	if(argc == 2) {
+
+		gettimeofday(&time,NULL);	
+		sprintf(file_name,"eth0.%lld.pcap",(long long)time.tv_sec);
+
+		descr2 = pcap_open_dead(DLT_EN10MB,1514);
+		pdumper = pcap_dump_open(descr2,file_name);
 
 		//Apertura de interface
 	   	if ((descr = pcap_open_live("eth0",*argv[1],1,100, errbuf)) == NULL){			/* ¡WARNING! 100ms de tiempo de respuesta?? */
@@ -72,12 +85,12 @@ int main(int argc, char **argv)
 		}
 
 		//Se pasa el contador como argumento, pero sera mas comodo y mucho mas habitual usar variables globales
-		retorno = pcap_loop (descr,-1,fa_nuevo_paquete, (uint8_t*)&contador);			/*  ¡WARNING! como funciona fa_nuevo_paquete*/
+		retorno = pcap_loop(descr,-1,fa_nuevo_paquete, (uint8_t*)&contador);			/*  ¡WARNING! como funciona fa_nuevo_paquete*/
 		if(retorno == -1){ 		//En caso de error
 			printf("Error al capturar un paquete %s, %s %d.\n",pcap_geterr(descr),__FILE__,__LINE__);
 			pcap_close(descr);
 			pcap_close(descr2);
-			pcap_dump_close(pdumper);
+			//pcap_dump_close(pdumper);
 			exit(ERROR);
 		}
 		else if(retorno==-2){ //pcap_breakloop() no asegura la no llamada a la funcion de atencion para paquetes ya en el buffer
@@ -86,16 +99,12 @@ int main(int argc, char **argv)
 		else if(retorno == 0){
 			printf("No mas paquetes o limite superado %s %d.\n",__FILE__,__LINE__);
 		}
-
-
-
+	
+		printf("Numero de paquetes recibidos por eth0: %d\n", count_paquetes);
 	}
 
-	if(signal(SIGINT,handle)==SIG_ERR){
-		printf("Error: Fallo al capturar la senal SIGINT.\n");
-		exit(ERROR);
-	}	
-		//Apertura de interface
+
+	//Apertura de interface
    	if ((descr = pcap_open_live("eth0",5,0,100, errbuf)) == NULL){
 		printf("Error: pcap_open_live(): %s, %s %d.\n",errbuf,__FILE__,__LINE__);
 		exit(ERROR);
