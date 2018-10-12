@@ -10,18 +10,16 @@ y los vuelca a traza nueva (�correctamente?) con tiempo actual
 ***************************************************************************/
 #include "ejemploPcap1.h"
 
-#define ERROR 1
-#define OK 0
+#define ETH_FRAME_MAX 1514	/* Tamanyo maximo trama ethernet */
 
-#define ETH_FRAME_MAX 1514	// Tamano maximo trama ethernet
-
+/* VARIABLES GLOBALES */
 pcap_t *descr=NULL,*descr2=NULL;
 pcap_dumper_t *pdumper=NULL;
 int count_paquetes = 0;
 
+
 /*
-	funcion para la gestion del control C
-	caso con un solo argumento
+	funcion para la gestion del Ctrl-C
 */
 void handle(int nsignal){
 	printf("Control C pulsado\n");
@@ -50,50 +48,62 @@ void fa_nuevo_paquete(uint8_t *usuario, const struct pcap_pkthdr* cabecera, cons
 
 int main(int argc, char **argv)
 {
-	int retorno=0,contador=0;
+	int retorno=0, contador=0;
 	char errbuf[PCAP_ERRBUF_SIZE];
 	char file_name[256];
 	struct timeval time;
 
-	/* Primer caso en el que no se introducen argumentos*/
+	/* Caso 1: ningun argumento */
 	if (argc == 1) {
 		fprintf (stdout, "ERROR POCOS ARGUMENTOS\n"); 
 		fprintf (stdout, "La entrada debe ser:\n"); 
-		fprintf (stdout, "\t\t\t./ejemploPcap1 numero_bytes_a_mostrar\n"); 
-		fprintf (stdout, "\t\t\t./ejemploPcap1 numero_bytes_a_mostrar nombre_traza.pcap\n"); 
+		fprintf (stdout, "\t\t\t./ejemploPcap1 \tnumero_bytes_a_mostrar\n"); 
+		fprintf (stdout, "\t\t\t./ejemploPcap1 \tnumero_bytes_a_mostrar \tnombre_traza.pcap\n"); 
 		return -1;
 	} 
 
-	/* Segundo caso en el que se introduce un argumento, siendo este el numero de Bytes a mostrar de los paquetes*/
-	if(signal(SIGINT,handle)==SIG_ERR){ 				//¡WARNING!  esto va aqui??
+	if(signal(SIGINT,handle)==SIG_ERR){ 													/* ¡WARNING!  esto va aqui?? */
 		printf("Error: Fallo al capturar la senal SIGINT.\n");
 		exit(ERROR);
 	}
 
+	/* Caso 2: un argumento, el numero de Bytes a mostrar de los paquetes*/
 	if(argc == 2) {
 
 		gettimeofday(&time,NULL);	
-		sprintf(file_name,"eth0.%lld.pcap",(long long)time.tv_sec);
+		sprintf(file_name,"eth0.%lld.pcap",(long long)time.tv_sec);		/*	file_name: nombre de la traza donde vamos a volcar los pqts */
 
+		/* para poder almacenar en file_name */
 		descr2 = pcap_open_dead(DLT_EN10MB,1514);
+		if( descr2 == NULL ){
+			printf("Algo fue mal en pcap_open_dead \n");
+			exit(ERROR);
+		}
 		pdumper = pcap_dump_open(descr2,file_name);
-
-		//Apertura de interface
-	   	if ((descr = pcap_open_live("eth0",*argv[1],1,100, errbuf)) == NULL){			/* ¡WARNING! 100ms de tiempo de respuesta?? */
-			printf("Error: pcap_open_live(): %s, %s %d.\n",errbuf,__FILE__,__LINE__);
+		if( pdumper == NULL ){
+			printf("Algo fue mal en pcap_dump_open \n");
+			pcap_close(descr2);
 			exit(ERROR);
 		}
 
-		//Se pasa el contador como argumento, pero sera mas comodo y mucho mas habitual usar variables globales
-		retorno = pcap_loop(descr,-1,fa_nuevo_paquete, (uint8_t*)&contador);			/*  ¡WARNING! como funciona fa_nuevo_paquete*/
-		if(retorno == -1){ 		//En caso de error
+		/* Apertura de interface */
+	   	if ((descr = pcap_open_live("eth0",*argv[1],1,100, errbuf)) == NULL){				/* ¡WARNING! 100ms de tiempo de respuesta?? */
+			printf("Error: pcap_open_live(): %s, %s %d.\n",errbuf,__FILE__,__LINE__);
+			pcap_close(descr2);
+			pcap_dump_close(pdumper);
+			exit(ERROR);
+		}
+
+		/* Se pasa el contador como argumento, pero sera mas comodo y mucho mas habitual usar variables globales */
+		retorno = pcap_loop(descr,-1,fa_nuevo_paquete, (uint8_t*)&contador);				/*  ¡WARNING! como funciona fa_nuevo_paquete*/
+		if(retorno == -1){
 			printf("Error al capturar un paquete %s, %s %d.\n",pcap_geterr(descr),__FILE__,__LINE__);
 			pcap_close(descr);
 			pcap_close(descr2);
-			//pcap_dump_close(pdumper);
+			pcap_dump_close(pdumper);
 			exit(ERROR);
 		}
-		else if(retorno==-2){ //pcap_breakloop() no asegura la no llamada a la funcion de atencion para paquetes ya en el buffer
+		else if(retorno==-2){ /* pcap_breakloop() no asegura la no llamada a la funcion de atencion para paquetes ya en el buffer */
 			printf("Llamada a %s %s %d.\n","pcap_breakloop()",__FILE__,__LINE__); 
 		}
 		else if(retorno == 0){
@@ -104,12 +114,13 @@ int main(int argc, char **argv)
 	}
 
 
-	//Apertura de interface
+	/* Apertura de interface */
    	if ((descr = pcap_open_live("eth0",5,0,100, errbuf)) == NULL){
 		printf("Error: pcap_open_live(): %s, %s %d.\n",errbuf,__FILE__,__LINE__);
 		exit(ERROR);
 	}
-		//Para volcado de traza
+	
+	/* Para volcado de traza */
 	descr2=pcap_open_dead(DLT_EN10MB,ETH_FRAME_MAX);
 	if (!descr2){
 		printf("Error al abrir el dump.\n");
@@ -126,16 +137,16 @@ int main(int argc, char **argv)
 		exit(ERROR);
 	}
 
-		//Se pasa el contador como argumento, pero sera mas comodo y mucho mas habitual usar variables globales
+	/* Se pasa el contador como argumento, pero sera mas comodo y mucho mas habitual usar variables globales */
 	retorno = pcap_loop (descr,50,fa_nuevo_paquete, (uint8_t*)&contador);
-	if(retorno == -1){ 		//En caso de error
+	if(retorno == -1){ 		
 		printf("Error al capturar un paquete %s, %s %d.\n",pcap_geterr(descr),__FILE__,__LINE__);
 		pcap_close(descr);
 		pcap_close(descr2);
 		pcap_dump_close(pdumper);
 		exit(ERROR);
 	}
-	else if(retorno==-2){ //pcap_breakloop() no asegura la no llamada a la funcion de atencion para paquetes ya en el buffer
+	else if(retorno==-2){ 	/* pcap_breakloop() no asegura la no llamada a la funcion de atencion para paquetes ya en el buffer */
 		printf("Llamada a %s %s %d.\n","pcap_breakloop()",__FILE__,__LINE__); 
 	}
 	else if(retorno == 0){
