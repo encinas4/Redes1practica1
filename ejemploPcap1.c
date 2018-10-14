@@ -38,13 +38,49 @@ void handle(int nsignal){
 */  
 void fa_nuevo_paquete(uint8_t *usuario, const struct pcap_pkthdr* cabecera, const uint8_t* paquete){
 	int* num_paquete=(int *)usuario;
+	struct pcap_pkthdr* cabeceraTiempo = NULL;
+	/*Aumentamos en uno el paquete leido*/
 	(*num_paquete)++;
 	count_paquetes ++;
-	cabecera->ts.tv_sec + 1800;
+	/*Creamos una nueva cabecera igual que la anterior pero con el tiempo modificado en 30 minutos adelantados*/
+	/*memcpy((time_t*)cabeceraTiempo->ts.tv_sec, (const time_t*)cabecera->ts.tv_sec , sizeof(cabecera->ts.tv_sec));
+	memcpy((time_t*)cabeceraTiempo->ts.tv_usec, (const time_t*)cabecera->ts.tv_usec , sizeof(cabecera->ts.tv_usec));
+	memcpy((int)cabeceraTiempo->len,(int)cabecera->len , sizeof(cabecera->len));
+	memcpy((int)cabeceraTiempo->caplen, (int)cabecera->caplen , sizeof(cabecera->caplen));*/
+	/*cabeceraTiempo->ts.tv_sec = cabecera->ts.tv_sec + 1800;
+	cabeceraTiempo->ts.tv_usec = cabecera->ts.tv_usec;
+	cabeceraTiempo->len = cabecera->len;
+	cabeceraTiempo->caplen = cabecera->caplen;*/
+	/*Capturamos el paquete*/
 	printf("Nuevo paquete capturado a las %s\n",ctime((const time_t*)&(cabecera->ts.tv_sec)));
 	if(pdumper){
 		pcap_dump((uint8_t *)pdumper,cabecera,paquete);
 	}
+}
+
+void n_bytes(int n, char *f) {
+
+	FILE *fichero = fopen(f, "r");
+	int i;
+	char c;
+
+	if(!fichero) {
+		printf("Error al leer el fichero para los n Bytes\n");
+	}
+
+	if(n == 0) {
+		printf("No hay nada que imprimir si se quieren mostrar %d Bytes\n", n);
+	} else{
+		while(i<2*n) {
+			c = fgetc(fichero);
+			if(c != 32){
+				i++;
+				printf(" %c",c);
+			}
+		}
+	}
+
+	fclose(fichero);
 }
 
 int main(int argc, char **argv)
@@ -54,6 +90,11 @@ int main(int argc, char **argv)
 	char file_name[256];
 	struct timeval time;
 
+	if(signal(SIGINT,handle)==SIG_ERR){ 													/* ¡WARNING!  esto va aqui?? */
+		printf("Error: Fallo al capturar la senal SIGINT.\n");
+		exit(ERROR);
+	}
+
 	/* Caso 1: ningun argumento */
 	if (argc == 1) {
 		fprintf (stdout, "ERROR POCOS ARGUMENTOS\n"); 
@@ -61,15 +102,8 @@ int main(int argc, char **argv)
 		fprintf (stdout, "\t\t\t./ejemploPcap1 \tnumero_bytes_a_mostrar\n"); 
 		fprintf (stdout, "\t\t\t./ejemploPcap1 \tnumero_bytes_a_mostrar \tnombre_traza.pcap\n"); 
 		return -1;
-	} 
 
-	if(signal(SIGINT,handle)==SIG_ERR){ 													/* ¡WARNING!  esto va aqui?? */
-		printf("Error: Fallo al capturar la senal SIGINT.\n");
-		exit(ERROR);
-	}
-
-	/* Caso 2: un argumento, el numero de Bytes a mostrar de los paquetes*/
-	if(argc == 2) {
+	} else if(argc == 2) {		/* Caso 2: un argumento, el numero de Bytes a mostrar de los paquetes*/
 
 		gettimeofday(&time,NULL);	
 		sprintf(file_name,"eth0.%lld.pcap",(long long)time.tv_sec);		/*	file_name: nombre de la traza donde vamos a volcar los pqts */
@@ -110,9 +144,14 @@ int main(int argc, char **argv)
 		else if(retorno == 0){
 			printf("No mas paquetes o limite superado %s %d.\n",__FILE__,__LINE__);
 		}
-	
-		printf("Numero de paquetes recibidos por eth0: %d\n", count_paquetes);
+		
+		n_bytes(*argv[1], file_name);
+		printf("\nNumero de paquetes recibidos por eth0: %d\n", count_paquetes);
 
+	} else if(argc == 3){
+		n_bytes(*argv[1], argv[2]);
+	} else {
+		fprintf(stdout, "El numero de argumentos no es valido, por favor, trate de introducir uno, dos o ninguno\n");
 	}
 	
 	pcap_dump_close(pdumper);
