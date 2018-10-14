@@ -38,7 +38,7 @@ void handle(int nsignal){
 */  
 void fa_nuevo_paquete(uint8_t *usuario, const struct pcap_pkthdr* cabecera, const uint8_t* paquete){
 	int* num_paquete=(int *)usuario;
-	struct pcap_pkthdr* cabeceraTiempo = NULL;
+	/*struct pcap_pkthdr* cabeceraTiempo = NULL;*/
 	/*Aumentamos en uno el paquete leido*/
 	(*num_paquete)++;
 	count_paquetes ++;
@@ -59,27 +59,26 @@ void fa_nuevo_paquete(uint8_t *usuario, const struct pcap_pkthdr* cabecera, cons
 }
 
 void n_bytes(int n, char *f) {
-
 	FILE *fichero = fopen(f, "r");
-	int i;
-	char c;
+	int i=0;
+	int c;
+	char *resultado = " ";
 
 	if(!fichero) {
 		printf("Error al leer el fichero para los n Bytes\n");
 	}
-
 	if(n == 0) {
 		printf("No hay nada que imprimir si se quieren mostrar %d Bytes\n", n);
 	} else{
-		while(i<2*n) {
+		while(i<(2*n)) {
 			c = fgetc(fichero);
 			if(c != 32){
+				printf("%x ", c);
 				i++;
-				printf(" %c",c);
 			}
 		}
 	}
-
+	printf("%s\n", resultado);
 	fclose(fichero);
 }
 
@@ -89,11 +88,7 @@ int main(int argc, char **argv)
 	char errbuf[PCAP_ERRBUF_SIZE];
 	char file_name[256];
 	struct timeval time;
-
-	if(signal(SIGINT,handle)==SIG_ERR){ 													/* ¡WARNING!  esto va aqui?? */
-		printf("Error: Fallo al capturar la senal SIGINT.\n");
-		exit(ERROR);
-	}
+	int num;
 
 	/* Caso 1: ningun argumento */
 	if (argc == 1) {
@@ -145,11 +140,19 @@ int main(int argc, char **argv)
 			printf("No mas paquetes o limite superado %s %d.\n",__FILE__,__LINE__);
 		}
 		
-		n_bytes(*argv[1], file_name);
+		if(signal(SIGINT,handle)==SIG_ERR){
+			printf("Error: Fallo al capturar la senal SIGINT.\n");
+			exit(ERROR);
+		}
+		
+		sscanf (argv[1],"%d",&num);
+		n_bytes(num, file_name);
 		printf("\nNumero de paquetes recibidos por eth0: %d\n", count_paquetes);
 
 	} else if(argc == 3){
-		n_bytes(*argv[1], argv[2]);
+		
+		sscanf (argv[1],"%d",&num);
+		n_bytes(num, argv[2]);
 	} else {
 		fprintf(stdout, "El numero de argumentos no es valido, por favor, trate de introducir uno, dos o ninguno\n");
 	}
