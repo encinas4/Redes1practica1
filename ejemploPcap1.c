@@ -39,7 +39,8 @@ void handle(int nsignal){
 void fa_nuevo_paquete(uint8_t *usuario, const struct pcap_pkthdr* cabecera, const uint8_t* paquete){
 	int* num_paquete=(int *)usuario;
 	(*num_paquete)++;
-	count_paquetes ++ ;
+	count_paquetes ++;
+	cabecera->ts.tv_sec + 1800;
 	printf("Nuevo paquete capturado a las %s\n",ctime((const time_t*)&(cabecera->ts.tv_sec)));
 	if(pdumper){
 		pcap_dump((uint8_t *)pdumper,cabecera,paquete);
@@ -111,46 +112,7 @@ int main(int argc, char **argv)
 		}
 	
 		printf("Numero de paquetes recibidos por eth0: %d\n", count_paquetes);
-	}
 
-
-	/* Apertura de interface */
-   	if ((descr = pcap_open_live("eth0",5,0,100, errbuf)) == NULL){
-		printf("Error: pcap_open_live(): %s, %s %d.\n",errbuf,__FILE__,__LINE__);
-		exit(ERROR);
-	}
-	
-	/* Para volcado de traza */
-	descr2=pcap_open_dead(DLT_EN10MB,ETH_FRAME_MAX);
-	if (!descr2){
-		printf("Error al abrir el dump.\n");
-		pcap_close(descr);
-		exit(ERROR);
-	}
-	gettimeofday(&time,NULL);
-	sprintf(file_name,"captura.eth0.%lld.pcap",(long long)time.tv_sec);
-	pdumper=pcap_dump_open(descr2,file_name);
-	if(!pdumper){
-		printf("Error al abrir el dumper: %s, %s %d.\n",pcap_geterr(descr2),__FILE__,__LINE__);
-		pcap_close(descr);
-		pcap_close(descr2);
-		exit(ERROR);
-	}
-
-	/* Se pasa el contador como argumento, pero sera mas comodo y mucho mas habitual usar variables globales */
-	retorno = pcap_loop (descr,50,fa_nuevo_paquete, (uint8_t*)&contador);
-	if(retorno == -1){ 		
-		printf("Error al capturar un paquete %s, %s %d.\n",pcap_geterr(descr),__FILE__,__LINE__);
-		pcap_close(descr);
-		pcap_close(descr2);
-		pcap_dump_close(pdumper);
-		exit(ERROR);
-	}
-	else if(retorno==-2){ 	/* pcap_breakloop() no asegura la no llamada a la funcion de atencion para paquetes ya en el buffer */
-		printf("Llamada a %s %s %d.\n","pcap_breakloop()",__FILE__,__LINE__); 
-	}
-	else if(retorno == 0){
-		printf("No mas paquetes o limite superado %s %d.\n",__FILE__,__LINE__);
 	}
 	
 	pcap_dump_close(pdumper);
