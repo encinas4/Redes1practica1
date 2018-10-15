@@ -137,6 +137,7 @@ int main(int argc, char **argv){
 			exit(ERROR);
 		}
 
+		/*Obtenemos el date y se lo asignamos al nombre de la traza*/
 		gettimeofday(&time,NULL);	
 		sprintf(file_name,"eth0.%lld.pcap",(long long)time.tv_sec);		/*	file_name: nombre de la traza donde vamos a volcar los pqts */
 
@@ -149,6 +150,8 @@ int main(int argc, char **argv){
 			printf("Error: pcap_open_dead() \n");
 			exit(ERROR);
 		}
+
+		/*Abrimos la traza en la que vamos a volcar los datos*/
 		pdumper = pcap_dump_open(descr2,file_name);
 		if( pdumper == NULL ){
 			printf("Error: pcap_dump_open() \n");
@@ -157,22 +160,13 @@ int main(int argc, char **argv){
 		}
 
 		/* Apertura de interface */
-	   	if ((descr = pcap_open_live("eth0",*argv[1],1,100, errbuf)) == NULL){				/* ¡WARNING! 100ms de tiempo de respuesta?? */
+	   	if ((descr = pcap_open_live("eth0",*argv[1],1,100, errbuf)) == NULL){
 			printf("Error: pcap_open_live(): %s, %s %d.\n",errbuf,__FILE__,__LINE__);
 			pcap_close(descr2);
 			pcap_dump_close(pdumper);
 			exit(ERROR);
 		}
 
-		/* Se pasa el contador como argumento, pero sera mas comodo y mucho mas habitual usar variables globales */
-		retorno = pcap_loop(descr,-1,fa_nuevo_paquete, (uint8_t*)&contador);				/*  ¡WARNING! como funciona fa_nuevo_paquete*/
-		if(retorno == -1){
-			printf("Error al capturar un paquete %s, %s %d.\n",pcap_geterr(descr),__FILE__,__LINE__);
-			pcap_close(descr);
-			pcap_close(descr2);
-			pcap_dump_close(pdumper);
-			exit(ERROR);
-		}
 		else if(retorno==-2){ /* pcap_breakloop() no asegura la no llamada a la funcion de atencion para paquetes ya en el buffer */
 			printf("Llamada a %s %s %d.\n","pcap_breakloop()",__FILE__,__LINE__); 
 		}
@@ -183,11 +177,26 @@ int main(int argc, char **argv){
 	} else if(argc == 3){
 		/* recuperamos el numero de bytes a imprimir por pantalla */
 		sscanf (argv[1],"%d",&num_bytes);
-		pcap_open_offline(argv[2], errbuf);
+
+		/*Abrimos la traza a analizar*/
+		if(descr = pcap_open_offline(argv[2], errbuf) == NULL) {
+			printf("Error al abrir el archivo pcap\n");
+			exit(ERROR);
+		}
 
 	} else {
 		fprintf(stdout, "El numero de argumentos no es valido, por favor, trate de introducir uno, dos o ninguno\n");
 		return -1;
+	}
+
+	/*Leemos el trafico de ARCHIVO O INTERFAZ*/
+	retorno = pcap_loop(descr,-1,fa_nuevo_paquete, (uint8_t*)&contador);
+	if(retorno == -1){
+		printf("Error al capturar un paquete %s, %s %d.\n",pcap_geterr(descr),__FILE__,__LINE__);
+		pcap_close(descr);
+		pcap_close(descr2);
+		pcap_dump_close(pdumper);
+		exit(ERROR);
 	}
 
 	return OK;
