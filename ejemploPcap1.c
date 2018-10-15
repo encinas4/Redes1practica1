@@ -13,47 +13,11 @@ y los vuelca a traza nueva (�correctamente?) con tiempo actual
 #define ETH_FRAME_MAX 1514	/* Tamanyo maximo trama ethernet */
 
 /* VARIABLES GLOBALES */
-pcap_t *descr=NULL,*descr2=NULL;
+pcap_t *descr=NULL,*descr2=NULL;		/*Descriptores de las trazas*/
 pcap_dumper_t *pdumper=NULL;
-int count_paquetes = 0;
-int num_bytes;
+int count_paquetes = 0;					/*Variable global que cuenta el numero de paquetes*/
+int num_bytes;							/*Numero de bytes a leer en cada paquete*/
 char file_name[256];
-
-/*
- * funcion para la impresion de los paquetes por pantalla
-*/
-
-/*
-void n_bytes(int n, char *f) {
-
-	FILE *fichero = NULL;
-	int i=0;
-	int c;
-	char *resultado = " ";
-	char * errbuf;
-
-	fichero = fopen(f,"r");
-	if(fichero==NULL) {
-		printf("Error al leer el fichero para los n Bytes\n");
-	}
-
-	if(n == 0) {
-		printf("No hay nada que imprimir si se quieren mostrar %d Bytes\n", n);
-	} else {
-
-		while( i < (2*n)) {
-			c = fgetc(fichero);
-			if(c != 32){
-				printf("%x ", c);
-				i++;
-			}
-		}
-	}
-
-	printf("%s\n", resultado);
-	fclose(fichero);
-}
-*/
 
 /*
 	funcion para la gestion del Ctrl-C
@@ -69,7 +33,6 @@ void handle(int nsignal){
 		pcap_dump_close(pdumper);
 
 	printf("\nNumero de paquetes recibidos por eth0: %d\n", count_paquetes);
-	/*n_bytes(num_bytes, file_name);*/
 
 	exit(OK);
 }
@@ -139,7 +102,7 @@ int main(int argc, char **argv){
 
 		/*Obtenemos el date y se lo asignamos al nombre de la traza*/
 		gettimeofday(&time,NULL);	
-		sprintf(file_name,"eth0.%lld.pcap",(long long)time.tv_sec);		/*	file_name: nombre de la traza donde vamos a volcar los pqts */
+		sprintf(file_name,"eth0.%lld.pcap",(long long)time.tv_sec);
 
 		/* recuperamos el numero de bytes a imprimir por pantalla */
 		sscanf (argv[1],"%d",&num_bytes);
@@ -179,7 +142,7 @@ int main(int argc, char **argv){
 		sscanf (argv[1],"%d",&num_bytes);
 
 		/*Abrimos la traza a analizar*/
-		if(descr = pcap_open_offline(argv[2], errbuf) == NULL) {
+		if((descr = pcap_open_offline(argv[2], errbuf)) == NULL) {
 			printf("Error al abrir el archivo pcap\n");
 			exit(ERROR);
 		}
@@ -198,6 +161,8 @@ int main(int argc, char **argv){
 		pcap_dump_close(pdumper);
 		exit(ERROR);
 	}
+
+	printf("\nNumero de paquetes recibidos por eth0: %d\n", count_paquetes);
 
 	return OK;
 }
