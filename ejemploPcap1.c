@@ -130,13 +130,6 @@ int main(int argc, char **argv){
 			exit(ERROR);
 		}
 
-		else if(retorno==-2){ /* pcap_breakloop() no asegura la no llamada a la funcion de atencion para paquetes ya en el buffer */
-			printf("Llamada a %s %s %d.\n","pcap_breakloop()",__FILE__,__LINE__); 
-		}
-		else if(retorno == 0){
-			printf("No mas paquetes o limite superado %s %d.\n",__FILE__,__LINE__);
-		}
-
 	} else if(argc == 3){
 		/* recuperamos el numero de bytes a imprimir por pantalla */
 		sscanf (argv[1],"%d",&num_bytes);
@@ -160,6 +153,11 @@ int main(int argc, char **argv){
 		pcap_close(descr2);
 		pcap_dump_close(pdumper);
 		exit(ERROR);
+	}else if(retorno==-2){ /* pcap_breakloop() no asegura la no llamada a la funcion de atencion para paquetes ya en el buffer */
+		printf("Llamada a %s %s %d.\n","pcap_breakloop()",__FILE__,__LINE__); 
+	}
+	else if(retorno == 0){
+		printf("No mas paquetes o limite superado %s %d.\n",__FILE__,__LINE__);
 	}
 
 	printf("\nNumero de paquetes recibidos por eth0: %d\n", count_paquetes);
