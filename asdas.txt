@@ -1,0 +1,37 @@
+Autores: Inés Fernández Campos y Javier Encinas Cortés
+
+Comentarios: Cuando el número de bytes de un paquete es inferior al tamaño
+introducido, se pone como mínimo el tamaño del paquete, es decir, se "sustituye"
+el tamaño introducido por el usuario a el mínimo del paquete.
+
+Documento "Practica_1_Redes.docx" : Documento en el que iran incluidas las 
+explicaciones de los ejercicios de wireshark y explicada la captura de pantalla de 
+validacion del apartado 3.
+
+Criterios de evaluacion:
+	- Normativa de entrega cumplida en su totalidad: Realizado, varias lecturas del 
+enunciado.
+
+	- Contar paquetes de una traza: Realizado, se ha incluido una variable global y
+	hemos verificado que la salida por pantalla es igual al numero de paquetes
+	leidos por wireshark.
+
+	- Contar paquetes de la interfaz de red: Realizado, se ha comprobado que la
+	salida de la captura de la interfaz es igual al numero de paquetes capturados.
+	Hemos contado las salidas por pantalla.
+
+	- Almacenar en una traza el tráfico capturado en vivo: Realizado, se ha comprobado
+	que las trazas guardadas coinciden tanto en la salida a la hora de captura como al 
+	abrir la traza en wireshark.
+
+	-Modificar fecha correctamente: Realizado, se ha comprobado la hora y la fecha 
+	a la que se capturaron los paquetes en vivo y la traza en wireshark donde han 
+	aumentado en 30 minutos la fecha de captura anterior.
+
+	- Imprimir los N primeros bytes de un paquete y validarlo con Wireshark: Realizado,
+	se ha comprobado tanto en wireshark con la captura como en la salida por pantalla	
+	del programa y coinciden los bytes "pedidos" con los de salida.
+
+	- Cuestionario: Realizado, se adjunta un docx en la carpeta que incluye un archivo
+	llamado Practica_1_Redes.docx que contiene las explicaciones de como se 
+	realizaron los dos ejercicios.
