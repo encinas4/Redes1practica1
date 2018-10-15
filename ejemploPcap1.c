@@ -16,6 +16,7 @@ y los vuelca a traza nueva (�correctamente?) con tiempo actual
 pcap_t *descr=NULL,*descr2=NULL;
 pcap_dumper_t *pdumper=NULL;
 int count_paquetes = 0;
+int num_bytes;
 
 
 /*
@@ -29,6 +30,11 @@ void handle(int nsignal){
 		pcap_close(descr2);
 	if(pdumper)
 		pcap_dump_close(pdumper);
+
+	printf("\nNumero de paquetes recibidos por eth0: %d\n", count_paquetes);
+	
+	n_bytes(num_bytes, file_name);
+
 	exit(OK);
 }
 
@@ -38,23 +44,22 @@ void handle(int nsignal){
 */  
 void fa_nuevo_paquete(uint8_t *usuario, const struct pcap_pkthdr* cabecera, const uint8_t* paquete){
 	int* num_paquete=(int *)usuario;
-	/*struct pcap_pkthdr* cabeceraTiempo = NULL;*/
+	struct pcap_pkthdr cabeceraTiempo;
+
 	/*Aumentamos en uno el paquete leido*/
 	(*num_paquete)++;
 	count_paquetes ++;
+
 	/*Creamos una nueva cabecera igual que la anterior pero con el tiempo modificado en 30 minutos adelantados*/
-	/*memcpy((time_t*)cabeceraTiempo->ts.tv_sec, (const time_t*)cabecera->ts.tv_sec , sizeof(cabecera->ts.tv_sec));
-	memcpy((time_t*)cabeceraTiempo->ts.tv_usec, (const time_t*)cabecera->ts.tv_usec , sizeof(cabecera->ts.tv_usec));
-	memcpy((int)cabeceraTiempo->len,(int)cabecera->len , sizeof(cabecera->len));
-	memcpy((int)cabeceraTiempo->caplen, (int)cabecera->caplen , sizeof(cabecera->caplen));*/
-	/*cabeceraTiempo->ts.tv_sec = cabecera->ts.tv_sec + 1800;
-	cabeceraTiempo->ts.tv_usec = cabecera->ts.tv_usec;
-	cabeceraTiempo->len = cabecera->len;
-	cabeceraTiempo->caplen = cabecera->caplen;*/
+	cabeceraTiempo.ts.tv_sec = cabecera->ts.tv_sec + 1800;
+	cabeceraTiempo.ts.tv_usec = cabecera->ts.tv_usec;
+	cabeceraTiempo.len = cabecera->len;
+	cabeceraTiempo.caplen = cabecera->caplen;
+
 	/*Capturamos el paquete*/
 	printf("Nuevo paquete capturado a las %s\n",ctime((const time_t*)&(cabecera->ts.tv_sec)));
 	if(pdumper){
-		pcap_dump((uint8_t *)pdumper,cabecera,paquete);
+		pcap_dump((uint8_t *)pdumper,&cabeceraTiempo,paquete);
 	}
 }
 
@@ -88,7 +93,6 @@ int main(int argc, char **argv)
 	char errbuf[PCAP_ERRBUF_SIZE];
 	char file_name[256];
 	struct timeval time;
-	int num;
 
 	/* Caso 1: ningun argumento */
 	if (argc == 1) {
@@ -102,6 +106,9 @@ int main(int argc, char **argv)
 
 		gettimeofday(&time,NULL);	
 		sprintf(file_name,"eth0.%lld.pcap",(long long)time.tv_sec);		/*	file_name: nombre de la traza donde vamos a volcar los pqts */
+
+		/* recuperamos el numero de bytes a imprimir por pantalla */
+		sscanf (argv[1],"%d",&num_bytes);
 
 		/* para poder almacenar en file_name */
 		descr2 = pcap_open_dead(DLT_EN10MB,1514);
@@ -144,15 +151,12 @@ int main(int argc, char **argv)
 			printf("Error: Fallo al capturar la senal SIGINT.\n");
 			exit(ERROR);
 		}
-		
-		sscanf (argv[1],"%d",&num);
-		n_bytes(num, file_name);
-		printf("\nNumero de paquetes recibidos por eth0: %d\n", count_paquetes);
 
 	} else if(argc == 3){
 		
-		sscanf (argv[1],"%d",&num);
-		n_bytes(num, argv[2]);
+		/* recuperamos el numero de bytes a imprimir por pantalla */
+		sscanf (argv[1],"%d",&num_bytes);
+		n_bytes(num_bytes, argv[2]);
 	} else {
 		fprintf(stdout, "El numero de argumentos no es valido, por favor, trate de introducir uno, dos o ninguno\n");
 	}
